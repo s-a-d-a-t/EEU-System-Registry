@@ -126,3 +126,107 @@ exports.register = async (req, res) => {
 
     }
 };
+
+// ============================================================================
+// LOGIN USER
+// ----------------------------------------------------------------------------
+// Flow:
+// 1. Receive email and password
+// 2. Find user by email
+// 3. Compare entered password with stored hash
+// 4. Generate JWT token
+// 5. Return token to client
+// ============================================================================
+
+exports.login = async (req,res) => {
+    try{
+        //Get login information from request
+
+       const{
+         email,
+         password
+       }=req.body;
+
+       // validate input
+
+       if(!email || !password){
+
+        return res.status(400).json({
+            message: "Email and Password are required."
+
+        });
+       }
+
+        // Find user by email
+
+        const user = await prisma.user.findUnique({
+            where: {
+                email
+            }
+        });
+
+        // Check if user exists
+
+        if(!user){
+            return res.status(401).json({
+                message: "Invalid email or password."
+            });
+        }
+
+        // Compare entered password with stored password hash
+
+        const passwordMatch = await bcrypt.compare(
+            password, user.passwordHash
+        );
+        if(!passwordMatch){
+            return res.status(401).json({
+                message: "incorrect password"
+            });
+        }
+
+        // Create JWT token
+
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                roleId: user.roleId
+            },
+
+            process.env.JWT_SECRET,
+
+            {
+                expiresIn: process.env.JWT_EXPIRES_IN
+            }
+        );
+
+        // Return token
+        res.staus(200).json({
+            message: "Login Successful.",
+            token,
+
+            user: {
+                id: user.id,
+
+                fullName: user.fullName,
+
+                email: user.email,
+
+                roleId: user.roleId
+
+            }
+        });
+    }
+
+    catch (error) {
+         console.error(error);
+
+
+        res.status(500).json({
+
+            message: "Internal server error."
+
+        });
+    }
+
+}
