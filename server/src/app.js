@@ -3,13 +3,21 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const prisma = require("./config/db");
 
+
+const authRoutes = require("./routes/authRoutes");
+
 dotenv.config();
 
+
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+//creates endpoint
+app.use("/api/auth",authRoutes);
 
 // Test Route
 app.get("/", (req, res) => {

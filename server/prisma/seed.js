@@ -1,13 +1,13 @@
 const { PrismaClient } = require("@prisma/client");
 const bcrypt = require("bcrypt");
 
-
 const prisma = new PrismaClient();
 
+async function main() {
 
-async function main(){
-
-    // Create roles
+    // ------------------------------------------------
+    // Create Roles
+    // ------------------------------------------------
 
     const roles = [
         "SUPER_ADMIN",
@@ -16,18 +16,17 @@ async function main(){
         "VIEWER"
     ];
 
-
-    for(const roleName of roles){
+    for (const roleName of roles) {
 
         await prisma.role.upsert({
 
-            where:{
+            where: {
                 name: roleName
             },
 
-            update:{},
+            update: {},
 
-            create:{
+            create: {
                 name: roleName
             }
 
@@ -35,72 +34,67 @@ async function main(){
 
     }
 
+    console.log("Roles created successfully");
 
-    console.log("Roles created");
 
 
+    // ------------------------------------------------
     // Find SUPER_ADMIN role
+    // ------------------------------------------------
 
-    const adminRole = await prisma.role.findUnique({
+    const superAdminRole = await prisma.role.findUnique({
 
-        where:{
-            name:"SUPER_ADMIN"
+        where: {
+            name: "SUPER_ADMIN"
         }
 
     });
 
 
-    // Create first admin user
 
-    const hashedPassword =
-    await bcrypt.hash("admin123",10);
+    // ------------------------------------------------
+    // Hash password
+    // ------------------------------------------------
+
+    const passwordHash = await bcrypt.hash("admin123", 10);
 
 
+
+    // ------------------------------------------------
+    // Create Admin User
+    // ------------------------------------------------
 
     await prisma.user.upsert({
 
-        where:{
-            email:"admin@eeu.com"
+        where: {
+            email: "admin@eeu.com"
         },
 
+        update: {},
 
-        update:{},
+        create: {
 
+            fullName: "System Administrator",
 
-        create:{
+            email: "admin@eeu.com",
 
-            username:"admin",
+            passwordHash,
 
-            email:"admin@eeu.com",
-
-            password:hashedPassword,
-
-            roleId:adminRole.id
+            roleId: superAdminRole.id
 
         }
 
     });
 
-
-    console.log("Admin user created");
+    console.log("Admin user created successfully");
 
 }
 
-
-
 main()
-
-.catch((error)=>{
-
-    console.error(error);
-
-    process.exit(1);
-
-})
-
-
-.finally(async()=>{
-
-    await prisma.$disconnect();
-
-});
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });
