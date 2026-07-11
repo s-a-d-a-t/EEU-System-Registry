@@ -11,17 +11,7 @@ exports.register = async (req,res) => {
             password,
             roleId
         } = req.body;
-    }
-
-    catch (error)
-    {
-      res.status(500).json({
-        message:"server error"
-
-      });
-    }
-
-
+    
 //checking for existing user
 const existingUser = await prisma.user.findUnique({
         where:{
@@ -58,6 +48,13 @@ res.status(201).json({
     }
 
 });
+    }catch (error)
+    {
+      res.status(500).json({
+        message:"server error"
+
+      });
+    }
 
 
 };
