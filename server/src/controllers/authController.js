@@ -141,6 +141,11 @@ exports.register = async (req, res) => {
 exports.login = async (req,res) => {
     try{
         //Get login information from request
+         console.log('========== LOGIN REQUEST ==========');
+         console.log('Headers:', req.headers);
+         console.log('Content-Type:', req.headers['content-type']);
+         console.log('Body:', req.body);
+         console.log('====================================');
 
        const{
          email,
@@ -201,7 +206,7 @@ exports.login = async (req,res) => {
         );
 
         // Return token
-        res.staus(200).json({
+        res.status(200).json({
             message: "Login Successful.",
             token,
 
