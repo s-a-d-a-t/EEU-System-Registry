@@ -5,6 +5,8 @@ const prisma = require("./config/db");
 
 
 const authRoutes = require("./routes/authRoutes");
+const applicationRoutes = require("./routes/applicationRoutes");
+
 
 dotenv.config();
 
@@ -18,6 +20,7 @@ app.use(express.json());
 
 //creates endpoint
 app.use("/api/auth",authRoutes);
+app.use("/api/applications", applicationRoutes);
 
 // Test Route
 app.get("/", (req, res) => {
