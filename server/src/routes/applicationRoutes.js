@@ -27,4 +27,18 @@ router.get(
     applicationController.getApplicationsById  // ✅ FIXED: Added 's'
 );
 
+// Update application
+router.put(
+    "/:id",
+    authenticate,
+    applicationController.updateApplication
+);
+
+// Delete application
+router.delete(
+    "/:id",
+    authenticate,
+    applicationController.deleteApplication
+);
+
 module.exports = router;

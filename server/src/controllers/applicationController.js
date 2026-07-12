@@ -134,5 +134,117 @@ exports.getApplicationsById = async (req,res) => {
 
     }
 };
+
+// UPDATE APPLICATION
+exports.updateApplication = async (req, res) => {
+    try {
+        // Get application ID from URL
+        const { id } = req.params;
+
+        const {
+            name,
+            description,
+            version
+        } = req.body;
+
+        // ------------------------------------------------------------
+        // Check whether application exists
+        // ------------------------------------------------------------
+
+        const existingApplication = await prisma.application.findUnique({
+
+            where: {
+                id: Number(id)
+            }
+
+        });
+
+        if (!existingApplication) {
+
+            return res.status(404).json({
+
+                message: "Application not found."
+
+            });
+
+        }
+        // ------------------------------------------------------------
+        // Update application
+        // ------------------------------------------------------------
+        const updatedApplication = await prisma.application.update({
+
+            where: {
+
+                id: Number(id)
+
+            },
+
+            data: {
+                name,
+                description,
+                version
+            }
+
+        });
+
+        // ------------------------------------------------------------
+        // Return updated application
+        // ------------------------------------------------------------
+
+        return res.status(200).json({
+
+            message: "Application updated successfully.",
+
+            application: updatedApplication
+
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+
+            message: "Internal server error."
+
+        });
+
+    }
+
+};
+ // delete application
+ exports.deleteApplication = async (req,res) => {
+     try{
+        const {id} = req.params;
+        //chk if apk exists
+        const existingApplication = await prisma.application.findUnique({
+            where: {
+                id: Number(id)
+            }
+        });
+        if (!existingApplication){
+            return res.status(404).json({
+                message: "Application not found."
+            });
+        }
+
+        //delete the application
+        await prisma.application.delete({
+            where: {
+                id: Number(id)
+            }
+        });
+        return res.status(200).json({
+            message:"Application deleted successfully."
+        });
+     }
+     catch (error){
+        console.error(error);
+
+        return res.status(500).json({
+            message:"Internal server error."
+        });
+     }
+};
 console.log("Application Controller Loaded");
 console.log(module.exports);
