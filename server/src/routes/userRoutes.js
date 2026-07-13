@@ -3,6 +3,7 @@ const router = express.Router();
 
 const userController = require("../controllers/userController");
 const authenticate = require("../middleware/authMiddleware");
+const authorize = require("../middleware/authorize");
 
 router.get(
     "/",
@@ -27,6 +28,8 @@ router.put(
 router.delete(
     "/:id",
     authenticate,
+    authorize("ADMIN","SUPER_ADMIN"),
     userController.deleteUser
 );
+
 module.exports = router;
