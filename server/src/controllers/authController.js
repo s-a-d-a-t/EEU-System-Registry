@@ -62,19 +62,8 @@ exports.register = async (req, res) => {
 
         }
 
-        // ------------------------------------------------------------
-        // Hash the password before saving it.
-        // Never store plain-text passwords in the database.
-        // ------------------------------------------------------------
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // ------------------------------------------------------------
-        // Create the new user in the database.
-        //
-        // Notice:
-        // JavaScript variable  ->  Database field
-        // hashedPassword       ->  passwordHash
-        // ------------------------------------------------------------
         const user = await prisma.user.create({
 
             data: {
@@ -126,17 +115,6 @@ exports.register = async (req, res) => {
 
     }
 };
-
-// ============================================================================
-// LOGIN USER
-// ----------------------------------------------------------------------------
-// Flow:
-// 1. Receive email and password
-// 2. Find user by email
-// 3. Compare entered password with stored hash
-// 4. Generate JWT token
-// 5. Return token to client
-// ============================================================================
 
 exports.login = async (req,res) => {
     try{
