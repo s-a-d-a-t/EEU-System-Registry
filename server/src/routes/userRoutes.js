@@ -6,14 +6,27 @@ const authenticate = require("../middleware/authMiddleware");
 const authorize = require("../middleware/authorize");
 
 const validate = require("../middleware/validate");
-const updateUserSchema = require("../validations/userValidation")
+const {
+    createUserSchema,
+    updateUserSchema
+} = require("../validations/userValidation");
+
+// User management is a Super Admin responsibility (SRS §3 / §7)
+
+// Create user
+router.post(
+    "/",
+    authenticate,
+    authorize("SUPER_ADMIN"),
+    validate(createUserSchema),
+    userController.createUser
+);
 
 // Get all users
 router.get(
     "/",
     authenticate,
-    authorize("ADMIN", "SUPER_ADMIN"),
-
+    authorize("SUPER_ADMIN"),
     userController.getAllUsers
 );
 
@@ -21,15 +34,15 @@ router.get(
 router.get(
     "/:id",
     authenticate,
-    authorize("ADMIN", "SUPER_ADMIN"),
+    authorize("SUPER_ADMIN"),
     userController.getUserById
 );
 
-// Update user
+// Update user (role, status, profile)
 router.put(
     "/:id",
     authenticate,
-    authorize("ADMIN", "SUPER_ADMIN"),
+    authorize("SUPER_ADMIN"),
     validate(updateUserSchema),
     userController.updateUser
 );
@@ -38,7 +51,7 @@ router.put(
 router.delete(
     "/:id",
     authenticate,
-    authorize("ADMIN", "SUPER_ADMIN"),
+    authorize("SUPER_ADMIN"),
     userController.deleteUser
 );
 

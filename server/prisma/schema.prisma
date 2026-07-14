@@ -13,35 +13,69 @@ datasource db {
 
 }
 
-model Role{
-  id Int @id @default(autoincrement())
+enum ApplicationStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
   name String @unique
-  
+
   users User[]
 }
+
 model User {
-  id           Int @id @default(autoincrement())
+  id           Int     @id @default(autoincrement())
   fullName     String
-  email        String @unique
+  email        String  @unique
   passwordHash String
+  isActive     Boolean @default(true)
 
   roleId Int
-  role Role @relation(fields: [roleId], references: [id])
+  role   Role @relation(fields: [roleId], references: [id])
 
-  applications Application[]
+  // Two distinct relations to Application for the audit trail
+  createdApplications Application[] @relation("CreatedApps")
+  updatedApplications Application[] @relation("UpdatedApps")
 
   createdAt DateTime @default(now())
 }
 
 model Application {
-  id          Int @id @default(autoincrement())
-  name        String
-  description String
-  version     String
-  status      String @default("PENDING")
+  id                  Int      @id @default(autoincrement())
+  name                String   @unique
+  description         String
+  version             String
+  publishedOn         DateTime
+  developerName       String
+  appUrl              String
+  coreFunctionalities String
 
+  // Stored as native Postgres arrays for filterable tags
+  frontendStack String[]
+  backendStack  String[]
+
+  // Manual file metadata (nullable — a manual is optional at create time)
+  manualStorageName  String?
+  manualOriginalName String?
+  manualMimeType     String?
+  manualSize         Int?
+
+  // Card presentation
+  iconIndex Int
+  theme     String
+  sortOrder Int    @default(0)
+
+  status ApplicationStatus @default(PUBLISHED)
+
+  // Audit trail
   createdById Int
-  createdBy User @relation(fields: [createdById], references: [id])
+  createdBy   User  @relation("CreatedApps", fields: [createdById], references: [id])
+  updatedById Int?
+  updatedBy   User? @relation("UpdatedApps", fields: [updatedById], references: [id])
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

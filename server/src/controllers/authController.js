@@ -2,14 +2,16 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/db");
 
-// Register user
+// Public self-registration.
+// Always creates the lowest-privilege role (VIEWER); the client cannot
+// choose a role here. Elevated accounts are created by a Super Admin via
+// POST /api/users. This closes the privilege-escalation hole.
 exports.register = async (req, res) => {
     try {
         const {
             fullName,
             email,
-            password,
-            roleId
+            password
         } = req.body;
 
         // Check if email already exists
@@ -26,17 +28,17 @@ exports.register = async (req, res) => {
             });
         }
 
-        // Check if role exists
-        const role = await prisma.role.findUnique({
+        // Force the default VIEWER role — never trust a client-supplied role
+        const viewerRole = await prisma.role.findUnique({
             where: {
-                id: Number(roleId)
+                name: "VIEWER"
             }
         });
 
-        if (!role) {
-            return res.status(400).json({
+        if (!viewerRole) {
+            return res.status(500).json({
                 success: false,
-                message: "Role not found."
+                message: "Default role is not configured. Run the seed script."
             });
         }
 
@@ -49,7 +51,7 @@ exports.register = async (req, res) => {
                 fullName,
                 email,
                 passwordHash: hashedPassword,
-                roleId: Number(roleId)
+                roleId: viewerRole.id
             }
         });
 
@@ -60,7 +62,7 @@ exports.register = async (req, res) => {
                 id: user.id,
                 fullName: user.fullName,
                 email: user.email,
-                roleId: user.roleId
+                role: viewerRole.name
             }
         });
 
@@ -101,6 +103,14 @@ exports.login = async (req, res) => {
             });
         }
 
+        // Deactivated accounts cannot log in (FR-UM-07)
+        if (!user.isActive) {
+            return res.status(403).json({
+                success: false,
+                message: "Account is deactivated."
+            });
+        }
+
         // Compare password
         const passwordMatch = await bcrypt.compare(
             password,
@@ -114,12 +124,12 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Create JWT token
+        // Create JWT token — role name is embedded so RBAC needs no DB lookup
         const token = jwt.sign(
             {
                 id: user.id,
                 email: user.email,
-                roleId: user.roleId
+                role: user.role.name
             },
             process.env.JWT_SECRET,
             {
@@ -147,4 +157,15 @@ exports.login = async (req, res) => {
             message: "Internal server error."
         });
     }
+};
+
+
+// Logout — with stateless JWT the client simply discards the token.
+// Endpoint kept for API completeness (SRS §7). Refresh-token invalidation
+// is a future enhancement (FR-UM-05).
+exports.logout = async (req, res) => {
+    return res.status(200).json({
+        success: true,
+        message: "Logout successful. Please discard your token."
+    });
 };

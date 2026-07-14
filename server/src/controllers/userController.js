@@ -1,85 +1,136 @@
+const bcrypt = require("bcrypt");
 const prisma = require("../config/db");
 
-exports.getAllUsers = async (req,res) => {
-    try{
-        const users = await prisma.user.findMany({
-            select: {
-                id:true,
-                fullName:true,
-                email:true,createdAt: true,
+const userSelect = {
+    id: true,
+    fullName: true,
+    email: true,
+    isActive: true,
+    createdAt: true,
+    role: {
+        select: {
+            id: true,
+            name: true
+        }
+    }
+};
 
-                role:{
-                    select:{
-                        id: true,
-                        name: true
-                    }
-                }
+// Create user (admin action) — role is chosen here, unlike public registration
+exports.createUser = async (req, res) => {
+    try {
+        const { fullName, email, password, roleId } = req.body;
+
+        const existingUser = await prisma.user.findUnique({
+            where: {
+                email
+            }
+        });
+
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "Email already exists."
+            });
+        }
+
+        const role = await prisma.role.findUnique({
+            where: {
+                id: Number(roleId)
+            }
+        });
+
+        if (!role) {
+            return res.status(400).json({
+                success: false,
+                message: "Role not found."
+            });
+        }
+
+        const passwordHash = await bcrypt.hash(password, 10);
+
+        const user = await prisma.user.create({
+            data: {
+                fullName,
+                email,
+                passwordHash,
+                roleId: Number(roleId)
             },
+            select: userSelect
+        });
+
+        return res.status(201).json({
+            success: true,
+            message: "User created successfully.",
+            data: user
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error."
+        });
+    }
+};
+
+exports.getAllUsers = async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            select: userSelect,
             orderBy: {
                 createdAt: "desc"
             }
         });
+
         return res.status(200).json({
-            success:true,
-            message:"users retrieved successfully.",
+            success: true,
+            message: "Users retrieved successfully.",
             data: users
         });
     }
-        catch(error){
-          console.error(error);
-          return res.status(500).json({
+    catch (error) {
+        console.error(error);
+        return res.status(500).json({
             success: false,
             message: "Internal server error."
-          });
-        }
-        
+        });
+    }
+
 };
 
 //getting user by id
 
-exports.getUserById = async (req,res) => {
-   try{
-      const {id} = req.params;
+exports.getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
 
-      const user = await prisma.user.findUnique({
-
-        where: {
-            id: Number(id)
-        },
-        select: {
-            id: true,
-            fullName: true,
-            email: true,
-            createdAt: true,
-
-            role:{
-                select:{
-                    id:true,
-                    name:true
-                }
-            }
-        }
-      });
-
-      if (!user){
-        return res.status(404).json({
-            success: false,
-            message: "user not found."
+        const user = await prisma.user.findUnique({
+            where: {
+                id: Number(id)
+            },
+            select: userSelect
         });
-      }
 
-      return res.status(200).json({
-        success: true,
-        message: "user retrieved successfully.",
-        data: user
-      });
-   } catch(error){
-    console.error(error);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+        }
 
-    return res.status(500).json({
-        message:"internal server error."
-    });
-   }
+        return res.status(200).json({
+            success: true,
+            message: "User retrieved successfully.",
+            data: user
+        });
+    } catch (error) {
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error."
+        });
+    }
 
 };
 
@@ -88,7 +139,7 @@ exports.updateUser = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const { fullName, email, roleId } = req.body;
+        const { fullName, email, roleId, isActive } = req.body;
 
         const existingUser = await prisma.user.findUnique({
             where: {
@@ -138,24 +189,14 @@ exports.updateUser = async (req, res) => {
         if (fullName !== undefined) data.fullName = fullName;
         if (email !== undefined) data.email = email;
         if (roleId !== undefined) data.roleId = Number(roleId);
+        if (isActive !== undefined) data.isActive = isActive;
 
         const updatedUser = await prisma.user.update({
             where: {
                 id: Number(id)
             },
             data,
-            select: {
-                id: true,
-                fullName: true,
-                email: true,
-                createdAt: true,
-                role: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
-            }
+            select: userSelect
         });
 
         return res.status(200).json({
@@ -174,7 +215,7 @@ exports.updateUser = async (req, res) => {
     }
 };
 
-//delete user 
+//delete user
 exports.deleteUser = async (req, res) => {
     try {
 
@@ -202,7 +243,7 @@ exports.deleteUser = async (req, res) => {
         if (applicationCount > 0) {
             return res.status(400).json({
                 success: false,
-                message: "Cannot delete user because they own applications."
+                message: "Cannot delete user because they own applications. Deactivate the account instead."
             });
         }
 

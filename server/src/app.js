@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const dotenv = require("dotenv");
 
 dotenv.config();
@@ -9,11 +10,13 @@ const prisma = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const userRoutes = require("./routes/userRoutes");
+const tagRoutes = require("./routes/tagRoutes");
 
 const app = express();
 
 // Middleware
-app.use(cors());
+app.use(helmet()); // secure HTTP headers
+app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -21,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/tags", tagRoutes);
 
 
 // Test Route
