@@ -2,7 +2,6 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/db");
 
-
 // Register user
 exports.register = async (req, res) => {
     try {
@@ -12,14 +11,6 @@ exports.register = async (req, res) => {
             password,
             roleId
         } = req.body;
-
-        // Validate required fields
-        if (!fullName || !email || !password || !roleId) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required."
-            });
-        }
 
         // Check if email already exists
         const existingUser = await prisma.user.findUnique({
@@ -74,9 +65,7 @@ exports.register = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(error);
-
         return res.status(500).json({
             success: false,
             message: "Internal server error."
@@ -94,16 +83,6 @@ exports.login = async (req, res) => {
             password
         } = req.body;
 
-
-        // Validate login information
-        if (!email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: "Email and password are required."
-            });
-        }
-
-
         // Find user by email
         const user = await prisma.user.findUnique({
             where: {
@@ -114,7 +93,6 @@ exports.login = async (req, res) => {
             }
         });
 
-
         // Check if user exists
         if (!user) {
             return res.status(401).json({
@@ -123,13 +101,11 @@ exports.login = async (req, res) => {
             });
         }
 
-
         // Compare password
         const passwordMatch = await bcrypt.compare(
             password,
             user.passwordHash
         );
-
 
         if (!passwordMatch) {
             return res.status(401).json({
@@ -137,7 +113,6 @@ exports.login = async (req, res) => {
                 message: "Invalid email or password."
             });
         }
-
 
         // Create JWT token
         const token = jwt.sign(
@@ -152,7 +127,6 @@ exports.login = async (req, res) => {
             }
         );
 
-
         return res.status(200).json({
             success: true,
             message: "Login successful.",
@@ -165,11 +139,9 @@ exports.login = async (req, res) => {
             }
         });
 
-
     } catch (error) {
 
         console.error(error);
-
         return res.status(500).json({
             success: false,
             message: "Internal server error."
