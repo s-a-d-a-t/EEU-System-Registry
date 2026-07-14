@@ -3,6 +3,7 @@ const router = express.Router();
 
 const applicationController = require("../controllers/applicationController");
 const authenticate = require("../middleware/authMiddleware");
+const optionalAuth = require("../middleware/optionalAuth");
 const authorize = require("../middleware/authorize");
 
 const validate = require("../middleware/validate");
@@ -20,19 +21,17 @@ router.post(
     applicationController.createApplication
 );
 
-// Get all applications
+// Get all applications — public (guests see published only)
 router.get(
     "/",
-    authenticate,
-    authorize("VIEWER", "CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    optionalAuth,
     applicationController.getAllApplications
 );
 
-// Get single application
+// Get single application — public (guests see published only)
 router.get(
     "/:id",
-    authenticate,
-    authorize("VIEWER", "CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    optionalAuth,
     applicationController.getApplicationById
 );
 

@@ -137,6 +137,11 @@ exports.getAllApplications = async (req, res) => {
             where.status = status;
         }
 
+        // Guests (no valid token) only see published applications (SRS Guest role)
+        if (!req.user) {
+            where.status = "PUBLISHED";
+        }
+
         const orderBy = sortOptions[sort] || sortOptions.sortOrder;
 
         // Pagination (FR-SR-05)
@@ -190,6 +195,15 @@ exports.getApplicationById = async (req, res) => {
         });
 
         if (!application) {
+            return res.status(404).json({
+                success: false,
+                message: "Application not found."
+            });
+        }
+
+        // Guests can only view published applications (SRS Guest role);
+        // return 404 rather than 403 so unpublished entries aren't revealed
+        if (!req.user && application.status !== "PUBLISHED") {
             return res.status(404).json({
                 success: false,
                 message: "Application not found."

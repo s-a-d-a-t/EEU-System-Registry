@@ -2,12 +2,11 @@ const express = require("express");
 const router = express.Router();
 
 const applicationController = require("../controllers/applicationController");
-const authenticate = require("../middleware/authMiddleware");
 
-// Distinct frontend/backend stack tags for filter UI / autocomplete
+// Distinct frontend/backend stack tags for filter UI / autocomplete.
+// Public — supports the guest browse/filter experience.
 router.get(
     "/",
-    authenticate,
     applicationController.getTags
 );
 

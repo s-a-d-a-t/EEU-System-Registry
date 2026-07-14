@@ -2,10 +2,11 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const prisma = require("../config/db");
 
-// Public self-registration.
-// Always creates the lowest-privilege role (VIEWER); the client cannot
-// choose a role here. Elevated accounts are created by a Super Admin via
-// POST /api/users. This closes the privilege-escalation hole.
+// Public self-registration (for contributors).
+// Always creates a CONTRIBUTOR that is INACTIVE (pending admin approval);
+// the client cannot choose a role. Elevated/other accounts are created by a
+// Super Admin via POST /api/users. General staff read the catalog as guests
+// and do not need to register.
 exports.register = async (req, res) => {
     try {
         const {
@@ -28,14 +29,14 @@ exports.register = async (req, res) => {
             });
         }
 
-        // Force the default VIEWER role — never trust a client-supplied role
-        const viewerRole = await prisma.role.findUnique({
+        // Force the CONTRIBUTOR role — never trust a client-supplied role
+        const contributorRole = await prisma.role.findUnique({
             where: {
-                name: "VIEWER"
+                name: "CONTRIBUTOR"
             }
         });
 
-        if (!viewerRole) {
+        if (!contributorRole) {
             return res.status(500).json({
                 success: false,
                 message: "Default role is not configured. Run the seed script."
@@ -45,24 +46,26 @@ exports.register = async (req, res) => {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
+        // Create user — inactive until an admin approves the account
         const user = await prisma.user.create({
             data: {
                 fullName,
                 email,
                 passwordHash: hashedPassword,
-                roleId: viewerRole.id
+                roleId: contributorRole.id,
+                isActive: false
             }
         });
 
         return res.status(201).json({
             success: true,
-            message: "User created successfully.",
+            message: "Registration successful. Your account is pending admin approval.",
             data: {
                 id: user.id,
                 fullName: user.fullName,
                 email: user.email,
-                role: viewerRole.name
+                role: contributorRole.name,
+                isActive: user.isActive
             }
         });
 
@@ -103,11 +106,12 @@ exports.login = async (req, res) => {
             });
         }
 
-        // Deactivated accounts cannot log in (FR-UM-07)
+        // Inactive accounts cannot log in — either pending admin approval
+        // (newly self-registered contributor) or deactivated (FR-UM-07)
         if (!user.isActive) {
             return res.status(403).json({
                 success: false,
-                message: "Account is deactivated."
+                message: "Your account is inactive or pending admin approval. Please contact an administrator."
             });
         }
 
