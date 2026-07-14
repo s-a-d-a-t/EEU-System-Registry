@@ -1,38 +1,54 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const prisma = require("./config/db");
 
+dotenv.config();
+
+const prisma = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const applicationRoutes = require("./routes/applicationRoutes");
 const userRoutes = require("./routes/userRoutes");
 
-
-
-dotenv.config();
-
-
 const app = express();
-app.use(express.urlencoded({ extended: true }));
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-//creates endpoint
-app.use("/api/auth",authRoutes);
+// Routes
+app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/users", userRoutes);
 
+
 // Test Route
 app.get("/", (req, res) => {
-    res.send("API running");
+    res.json({
+        success: true,
+        message: "API is running."
+    });
 });
 
-app.get("/users", async(req,res) => {
-    const users = await prisma.user.findMany();
-    res.json(users);
+// Handle unknown routes
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: "Route not found."
+    });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+
+    console.error(error);
+
+    res.status(500).json({
+        success: false,
+        message: "Internal server error."
+    });
+
 });
 
 module.exports = app;

@@ -1,36 +1,39 @@
 const express = require("express");
 const router = express.Router();
-const applicationController = require("../controllers/applicationController");
-const authenticate  = require("../middleware/authMiddleware");
 
-console.log("authenticate type:", typeof authenticate);
-console.log("authenticate is:", authenticate);
+const applicationController = require("../controllers/applicationController");
+const authenticate = require("../middleware/authMiddleware");
+const authorize = require("../middleware/authorize");
 
 // Create application
 router.post(
     "/",
     authenticate,
-    applicationController.createApplication  // ✅ Exists
+    authorize("CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    applicationController.createApplication
 );
 
 // Get all applications
 router.get(
     "/",
     authenticate,
-    applicationController.getAllApplications  // ✅ Exists
+    authorize("VIEWER", "CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    applicationController.getAllApplications
 );
 
 // Get single application
 router.get(
     "/:id",
     authenticate,
-    applicationController.getApplicationsById  // ✅ FIXED: Added 's'
+    authorize("VIEWER", "CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    applicationController.getApplicationById
 );
 
 // Update application
 router.put(
     "/:id",
     authenticate,
+    authorize("CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
     applicationController.updateApplication
 );
 
@@ -38,6 +41,7 @@ router.put(
 router.delete(
     "/:id",
     authenticate,
+    authorize("ADMIN", "SUPER_ADMIN"),
     applicationController.deleteApplication
 );
 

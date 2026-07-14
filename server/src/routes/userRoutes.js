@@ -1,34 +1,39 @@
-const express =  require("express");
+const express = require("express");
 const router = express.Router();
 
 const userController = require("../controllers/userController");
 const authenticate = require("../middleware/authMiddleware");
 const authorize = require("../middleware/authorize");
 
+// Get all users
 router.get(
     "/",
     authenticate,
+    authorize("ADMIN", "SUPER_ADMIN"),
     userController.getAllUsers
 );
-// get by id
+
+// Get user by ID
 router.get(
-  "/:id",
-  authenticate,
-  userController.getUserById  
+    "/:id",
+    authenticate,
+    authorize("ADMIN", "SUPER_ADMIN"),
+    userController.getUserById
 );
 
-//update user
+// Update user
 router.put(
     "/:id",
     authenticate,
+    authorize("ADMIN", "SUPER_ADMIN"),
     userController.updateUser
 );
 
-//delete user
+// Delete user
 router.delete(
     "/:id",
     authenticate,
-    authorize("ADMIN","SUPER_ADMIN"),
+    authorize("ADMIN", "SUPER_ADMIN"),
     userController.deleteUser
 );
 

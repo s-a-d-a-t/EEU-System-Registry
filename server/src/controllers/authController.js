@@ -1,27 +1,11 @@
-// ============================================================================
-// Authentication Controller
-// ----------------------------------------------------------------------------
-// Handles user registration.
-//
-// Flow:
-// 1. Receive data from the client
-// 2. Validate required fields
-// 3. Check if the email already exists
-// 4. Hash the user's password
-// 5. Save the user to the database
-// 6. Return a success response
-// ============================================================================
-
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken"); // Will be used later for login
+const jwt = require("jsonwebtoken");
 const prisma = require("../config/db");
 
+
+// Register user
 exports.register = async (req, res) => {
     try {
-
-        // ------------------------------------------------------------
-        // Extract user information from the request body
-        // ------------------------------------------------------------
         const {
             fullName,
             email,
@@ -29,187 +13,166 @@ exports.register = async (req, res) => {
             roleId
         } = req.body;
 
-        // ------------------------------------------------------------
-        // Basic Validation
-        // Ensure all required fields are provided.
-        // Without this check, incomplete data could be stored.
-        // ------------------------------------------------------------
+        // Validate required fields
         if (!fullName || !email || !password || !roleId) {
-
             return res.status(400).json({
+                success: false,
                 message: "All fields are required."
             });
-
         }
 
-        // ------------------------------------------------------------
-        // Check whether a user with the same email already exists.
-        // Email addresses must be unique.
-        // ------------------------------------------------------------
+        // Check if email already exists
         const existingUser = await prisma.user.findUnique({
-
             where: {
                 email
             }
-
         });
 
         if (existingUser) {
-
             return res.status(409).json({
+                success: false,
                 message: "Email already exists."
             });
-
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        const user = await prisma.user.create({
-
-            data: {
-
-                fullName,
-
-                email,
-
-                passwordHash: hashedPassword,
-
-                roleId
-
+        // Check if role exists
+        const role = await prisma.role.findUnique({
+            where: {
+                id: Number(roleId)
             }
-
         });
 
-        // ------------------------------------------------------------
-        // Send a success response.
-        // Never return passwordHash to the client.
-        // ------------------------------------------------------------
-        res.status(201).json({
+        if (!role) {
+            return res.status(400).json({
+                success: false,
+                message: "Role not found."
+            });
+        }
 
-            message: "User created successfully.",
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-            user: {
-
-                id: user.id,
-
-                fullName: user.fullName,
-
-                email: user.email,
-
-                roleId: user.roleId
-
+        // Create user
+        const user = await prisma.user.create({
+            data: {
+                fullName,
+                email,
+                passwordHash: hashedPassword,
+                roleId: Number(roleId)
             }
+        });
 
+        return res.status(201).json({
+            success: true,
+            message: "User created successfully.",
+            data: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                roleId: user.roleId
+            }
         });
 
     } catch (error) {
 
-        // Log the actual error for debugging.
         console.error(error);
 
-        res.status(500).json({
-
+        return res.status(500).json({
+            success: false,
             message: "Internal server error."
-
         });
-
     }
 };
 
-exports.login = async (req,res) => {
-    try{
-        //Get login information from request
-         console.log('========== LOGIN REQUEST ==========');
-         console.log('Headers:', req.headers);
-         console.log('Content-Type:', req.headers['content-type']);
-         console.log('Body:', req.body);
-         console.log('====================================');
 
-       const{
-         email,
-         password
-       }=req.body;
+// Login user
+exports.login = async (req, res) => {
+    try {
 
-       // validate input
+        const {
+            email,
+            password
+        } = req.body;
 
-       if(!email || !password){
 
-        return res.status(400).json({
-            message: "Email and Password are required."
+        // Validate login information
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: "Email and password are required."
+            });
+        }
 
-        });
-       }
 
         // Find user by email
-
         const user = await prisma.user.findUnique({
             where: {
                 email
+            },
+            include: {
+                role: true
             }
         });
 
-        // Check if user exists
 
-        if(!user){
+        // Check if user exists
+        if (!user) {
             return res.status(401).json({
+                success: false,
                 message: "Invalid email or password."
             });
         }
 
-        // Compare entered password with stored password hash
 
+        // Compare password
         const passwordMatch = await bcrypt.compare(
-            password, user.passwordHash
+            password,
+            user.passwordHash
         );
-        if(!passwordMatch){
+
+
+        if (!passwordMatch) {
             return res.status(401).json({
-                message: "incorrect password"
+                success: false,
+                message: "Invalid email or password."
             });
         }
 
-        // Create JWT token
 
+        // Create JWT token
         const token = jwt.sign(
             {
                 id: user.id,
                 email: user.email,
                 roleId: user.roleId
             },
-
             process.env.JWT_SECRET,
-
             {
                 expiresIn: process.env.JWT_EXPIRES_IN
             }
         );
 
-        // Return token
-        res.status(200).json({
-            message: "Login Successful.",
-            token,
 
+        return res.status(200).json({
+            success: true,
+            message: "Login successful.",
+            token,
             user: {
                 id: user.id,
-
                 fullName: user.fullName,
-
                 email: user.email,
-
-                roleId: user.roleId
-
+                role: user.role.name
             }
         });
-    }
-
-    catch (error) {
-         console.error(error);
 
 
-        res.status(500).json({
+    } catch (error) {
 
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
             message: "Internal server error."
-
         });
     }
-
-}
+};
