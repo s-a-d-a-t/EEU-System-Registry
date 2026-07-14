@@ -5,11 +5,18 @@ const applicationController = require("../controllers/applicationController");
 const authenticate = require("../middleware/authMiddleware");
 const authorize = require("../middleware/authorize");
 
+const validate = require("../middleware/validate");
+const {
+    createApplicationSchema,
+    updateApplicationSchema
+} = require("../validations/applicationValidation");
+
 // Create application
 router.post(
     "/",
     authenticate,
     authorize("CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    validate(createApplicationSchema),
     applicationController.createApplication
 );
 
@@ -34,6 +41,7 @@ router.put(
     "/:id",
     authenticate,
     authorize("CONTRIBUTOR", "ADMIN", "SUPER_ADMIN"),
+    validate(updateApplicationSchema),
     applicationController.updateApplication
 );
 

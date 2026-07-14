@@ -1,7 +1,7 @@
 const Joi = require("joi");
 
 //user registration validation
-const registrationSchema = Joi.object({
+const registerSchema = Joi.object({
 
     fullName: Joi.string()
         .min(3)

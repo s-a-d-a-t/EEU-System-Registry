@@ -10,7 +10,6 @@ const applicationInclude = {
     }
 };
 
-
 // Create application
 exports.createApplication = async (req, res) => {
     try {
@@ -20,25 +19,13 @@ exports.createApplication = async (req, res) => {
             version
         } = req.body;
 
-        // Validate required fields
-        if (!name || !description || !version) {
-            return res.status(400).json({
-                success: false,
-                message: "All fields are required."
-            });
-
-        }
-
-        // Create application
         const application = await prisma.application.create({
             data: {
                 name,
                 description,
                 version,
                 createdById: req.user.id
-
             },
-
             include: applicationInclude
         });
 
@@ -49,13 +36,11 @@ exports.createApplication = async (req, res) => {
         });
 
     } catch (error) {
-
         console.error(error);
-        return res.status(500).json({
 
+        return res.status(500).json({
             success: false,
             message: "Internal server error."
-
         });
     }
 };
@@ -70,7 +55,6 @@ exports.getAllApplications = async (req, res) => {
             }
         });
 
-        // Return applications
         return res.status(200).json({
             success: true,
             message: "Applications retrieved successfully.",
@@ -79,20 +63,19 @@ exports.getAllApplications = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error."
         });
-
     }
-
 };
 
 // Get application by ID
 exports.getApplicationById = async (req, res) => {
-
     try {
         const { id } = req.params;
+
         const application = await prisma.application.findUnique({
             where: {
                 id: Number(id)
@@ -100,7 +83,6 @@ exports.getApplicationById = async (req, res) => {
             include: applicationInclude
         });
 
-        // Check if application exists
         if (!application) {
             return res.status(404).json({
                 success: false,
@@ -116,18 +98,16 @@ exports.getApplicationById = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error."
         });
-
     }
-
 };
 
 // Update application
 exports.updateApplication = async (req, res) => {
-
     try {
         const { id } = req.params;
         const {
@@ -136,12 +116,12 @@ exports.updateApplication = async (req, res) => {
             version
         } = req.body;
 
-        // Check whether application exists
         const existingApplication = await prisma.application.findUnique({
             where: {
                 id: Number(id)
             }
         });
+
         if (!existingApplication) {
             return res.status(404).json({
                 success: false,
@@ -149,13 +129,23 @@ exports.updateApplication = async (req, res) => {
             });
         }
 
-        // Update only provided fields
+        // Contributors can only update their own applications
+if (
+    req.currentUser.role.name === "CONTRIBUTOR" &&
+    existingApplication.createdById !== req.currentUser.id
+) {
+    return res.status(403).json({
+        success: false,
+        message: "You can only update your own applications."
+    });
+}
+
         const data = {};
+
         if (name !== undefined) data.name = name;
         if (description !== undefined) data.description = description;
         if (version !== undefined) data.version = version;
 
-        // Update application
         const updatedApplication = await prisma.application.update({
             where: {
                 id: Number(id)
@@ -163,6 +153,7 @@ exports.updateApplication = async (req, res) => {
             data,
             include: applicationInclude
         });
+
         return res.status(200).json({
             success: true,
             message: "Application updated successfully.",
@@ -171,6 +162,7 @@ exports.updateApplication = async (req, res) => {
 
     } catch (error) {
         console.error(error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error."
@@ -182,12 +174,13 @@ exports.updateApplication = async (req, res) => {
 exports.deleteApplication = async (req, res) => {
     try {
         const { id } = req.params;
-        // Check if application exists
+
         const existingApplication = await prisma.application.findUnique({
             where: {
                 id: Number(id)
             }
         });
+
         if (!existingApplication) {
             return res.status(404).json({
                 success: false,
@@ -195,26 +188,23 @@ exports.deleteApplication = async (req, res) => {
             });
         }
 
-        // Delete application
         await prisma.application.delete({
             where: {
                 id: Number(id)
             }
         });
+
         return res.status(200).json({
             success: true,
             message: "Application deleted successfully."
         });
 
     } catch (error) {
-
         console.error(error);
+
         return res.status(500).json({
             success: false,
             message: "Internal server error."
-
         });
-
     }
-
 };

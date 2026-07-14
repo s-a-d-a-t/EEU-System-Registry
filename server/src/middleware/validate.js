@@ -12,4 +12,4 @@ const validate = (schema) => {
     };
 };
 
-modules.exports = validate;
+module.exports = validate;

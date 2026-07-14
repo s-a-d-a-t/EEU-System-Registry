@@ -5,11 +5,15 @@ const userController = require("../controllers/userController");
 const authenticate = require("../middleware/authMiddleware");
 const authorize = require("../middleware/authorize");
 
+const validate = require("../middleware/validate");
+const updateUserSchema = require("../validations/userValidation")
+
 // Get all users
 router.get(
     "/",
     authenticate,
     authorize("ADMIN", "SUPER_ADMIN"),
+
     userController.getAllUsers
 );
 
@@ -26,6 +30,7 @@ router.put(
     "/:id",
     authenticate,
     authorize("ADMIN", "SUPER_ADMIN"),
+    validate(updateUserSchema),
     userController.updateUser
 );
 
