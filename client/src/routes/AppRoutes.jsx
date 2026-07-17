@@ -13,9 +13,7 @@ import Users from "../pages/users/Users";
 const AppRoutes = () => {
     return (
         <BrowserRouter>
-
             <Routes>
-
                 <Route 
                     path="/login" 
                     element={<Login />} 
@@ -25,7 +23,6 @@ const AppRoutes = () => {
                     path="/" 
                     element={<MainLayout />}
                 >
-
                     <Route 
                         path="registry" 
                         element={<Registry />} 
@@ -47,10 +44,7 @@ const AppRoutes = () => {
                             path=":id/edit" 
                             element={<Edit />} 
                         />
-
                     </Route>
-
-
                     <Route 
                         path="users" 
                         element={<Users />} 
@@ -63,6 +57,5 @@ const AppRoutes = () => {
         </BrowserRouter>
     );
 };
-
 
 export default AppRoutes;
